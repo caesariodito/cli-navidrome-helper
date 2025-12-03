@@ -41,6 +41,10 @@ go build -o nd-import ./cmd/nd-import
 - `UNNEEDED_FILES` (optional): Comma-separated globs to delete after extraction. If they would delete everything, the run aborts.
 - `PIXELDRAIN_TOKEN` (optional): Bearer token if the link requires auth.
 
+### Download progress
+- The CLI displays a single-line progress indicator during download, showing transferred bytes, percent (when `Content-Length` is provided), speed, and ETA.
+- After download completes, a newline is printed before further logs.
+
 ## Behavior notes
 - Collision policy: aborts if any destination file/dir already exists under `${NAVIDROME_MUSIC_PATH}/${artist}`; nothing is overwritten.
 - Download: requires the response to look like a zip (`Content-Type` containing `zip` or `octet-stream`), otherwise fails fast.
