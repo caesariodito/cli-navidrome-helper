@@ -18,11 +18,15 @@ Small Go CLI that downloads a Pixeldrain archive (doubledouble.top/Pixeldrain li
 2) Run without installing:
 ```
 go run ./cmd/nd-import --artist "Artist Name" --url https://pixeldrain.com/u/FILEID
+# or positional form:
+go run ./cmd/nd-import "Artist Name" https://pixeldrain.com/u/FILEID
 ```
 3) Or build a binary:
 ```
 go build -o nd-import ./cmd/nd-import
 ./nd-import --artist "Artist Name" --url FILEID_OR_URL
+# or
+./nd-import "Artist Name" FILEID_OR_URL
 ```
 
 ### Flags

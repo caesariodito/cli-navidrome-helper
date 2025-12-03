@@ -33,13 +33,24 @@ func parseFlags(args []string) (app.Options, error) {
 	dryRun := fs.Bool("dry-run", false, "Validate and plan actions without writing files")
 
 	fs.Usage = func() {
-		fmt.Fprintf(fs.Output(), "Usage: %s --artist <name> --url <pixeldrain-url> [options]\n\n", os.Args[0])
+		fmt.Fprintf(fs.Output(), "Usage:\n")
+		fmt.Fprintf(fs.Output(), "  %s --artist <name> --url <pixeldrain-url> [options]\n", os.Args[0])
+		fmt.Fprintf(fs.Output(), "  %s \"<artist>\" \"<pixeldrain-url>\" [options]\n\n", os.Args[0])
 		fmt.Fprintln(fs.Output(), "Environment: NAVIDROME_MUSIC_PATH is required; UNNEEDED_FILES and PIXELDRAIN_TOKEN are optional.")
 		fs.PrintDefaults()
 	}
 
 	if err := fs.Parse(args); err != nil {
 		return app.Options{}, err
+	}
+
+	// Support positional args: <artist> <url>
+	positional := fs.Args()
+	if strings.TrimSpace(*artist) == "" && len(positional) >= 1 {
+		*artist = positional[0]
+	}
+	if strings.TrimSpace(*url) == "" && len(positional) >= 2 {
+		*url = positional[1]
 	}
 
 	var missing []string
