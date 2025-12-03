@@ -1,0 +1,6 @@
+- Define the CLI surface (flags, help text, usage examples) and set up Go module scaffolding; decide on cobra vs. stdlib flags.
+- Implement configuration loading from `.env` and environment variables, including validation of `NAVIDROME_MUSIC_PATH` and parsing `UNNEEDED_FILES` patterns.
+- Build Pixeldrain download logic with URL/ID validation, optional token support, and streamed download to a temp file.
+- Implement zip extraction into a temp directory with pattern-based pruning using the configured `UNNEEDED_FILES`.
+- Add move/merge flow to place cleaned files into `${NAVIDROME_MUSIC_PATH}/${artist}`, handling collisions and dry-run/keep-temp behaviors.
+- Wire user-facing logging, progress/status summaries, and exit codes; add tests for validation, pruning, collision handling, and dry-run safeguards.
