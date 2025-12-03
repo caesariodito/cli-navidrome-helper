@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"cli-navidrome-helper/internal/config"
 
@@ -150,7 +151,9 @@ func (r *runner) downloadArchive(downloadURL, fileID string) (string, error) {
 	}
 	defer outFile.Close()
 
-	written, err := io.Copy(outFile, resp.Body)
+	pw := newProgressWriter(resp.ContentLength, fmt.Sprintf("Downloading %s", fileID))
+	written, err := io.Copy(io.MultiWriter(outFile, pw), resp.Body)
+	pw.Finish()
 	if err != nil {
 		return "", fmt.Errorf("write download: %w", err)
 	}
@@ -552,4 +555,82 @@ func humanBytes(n int64) string {
 	value := float64(n) / float64(div)
 	unit := []string{"KB", "MB", "GB", "TB", "PB"}[exp]
 	return fmt.Sprintf("%.1f %s", value, unit)
+}
+
+type progressWriter struct {
+	total      int64
+	label      string
+	start      time.Time
+	lastPrint  time.Time
+	written    int64
+	forcePrint time.Duration
+}
+
+func newProgressWriter(total int64, label string) *progressWriter {
+	return &progressWriter{
+		total:      total,
+		label:      label,
+		start:      time.Now(),
+		lastPrint:  time.Now(),
+		forcePrint: 200 * time.Millisecond,
+	}
+}
+
+func (p *progressWriter) Write(b []byte) (int, error) {
+	n := len(b)
+	p.written += int64(n)
+	p.maybePrint(false)
+	return n, nil
+}
+
+func (p *progressWriter) Finish() {
+	p.maybePrint(true)
+	fmt.Fprint(os.Stdout, "\n")
+}
+
+func (p *progressWriter) maybePrint(force bool) {
+	now := time.Now()
+	if !force && now.Sub(p.lastPrint) < p.forcePrint {
+		return
+	}
+	p.lastPrint = now
+
+	elapsed := now.Sub(p.start)
+	if elapsed <= 0 {
+		elapsed = time.Millisecond
+	}
+	speed := float64(p.written) / elapsed.Seconds()
+
+	var line string
+	if p.total > 0 {
+		remaining := p.total - p.written
+		if remaining < 0 {
+			remaining = 0
+		}
+		eta := humanDuration(remaining, speed)
+		percent := float64(p.written) / float64(p.total) * 100
+		line = fmt.Sprintf("\r%s: %s/%s (%.1f%%, %s/s, eta %s)", p.label, humanBytes(p.written), humanBytes(p.total), percent, humanBytes(int64(speed)), eta)
+	} else {
+		line = fmt.Sprintf("\r%s: %s (unknown total, %s/s)", p.label, humanBytes(p.written), humanBytes(int64(speed)))
+	}
+
+	fmt.Fprint(os.Stdout, line)
+}
+
+func humanDuration(remaining int64, speed float64) string {
+	if speed <= 0 {
+		return "?"
+	}
+	seconds := float64(remaining) / speed
+	d := time.Duration(seconds * float64(time.Second))
+	if d < time.Second {
+		return "<1s"
+	}
+	if d < time.Minute {
+		return fmt.Sprintf("%ds", int(d.Seconds()))
+	}
+	if d < time.Hour {
+		return fmt.Sprintf("%dm%ds", int(d.Minutes()), int(d.Seconds())%60)
+	}
+	return fmt.Sprintf("%dh%dm", int(d.Hours()), int(d.Minutes())%60)
 }
